@@ -1,9 +1,12 @@
 const mongoose=require("mongoose");
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+
+const jwt=require("jsonwebtoken");
+const bcrypt=require("bcrypt")
+
 mongoose.connect("mongodb://127.0.0.1:27017/miniproject");
 
-const userSchema=mongoose.Schema({
+const projectSchema=mongoose.Schema({
+
     Project_name: {
         type: String,
         required: [true, 'Project_name is required'],
@@ -30,4 +33,4 @@ const userSchema=mongoose.Schema({
     timestamp:true
 });
 
-module.exports=mongoose.model("user",userSchema);
+module.exports=mongoose.model("Project",projectSchema);
