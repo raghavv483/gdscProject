@@ -1,8 +1,10 @@
 const express = require('express');  
 const router = express.Router();  
-import { User } from '../model/user';
-import JWT from "jsonwebtoken"
-import mongoose from 'mongoose'
+
+const User=require("../models/user")
+
+const JWT=require("jsonwebtoken");
+const mongoose=require("mongoose");
 const generateAccessAndRefreshToken = async(userId) => {
 
     try {
@@ -20,52 +22,39 @@ const generateAccessAndRefreshToken = async(userId) => {
     }
 };
 
-const signupUser= async function(req,res){
-    const {email, fullName, password} = req.body
+const signupUser = async function(req, res, next) {  
+    console.log("ji")
+    try {  
+        const { email, fullName, password, thumbnail } = req.body;
+        if ([email, fullName, password].some(field => field?.trim() === "")) {  
+            return res.status(400).json({ error: "All fields are required" });  
+        }   
+        const userExists = await User.findOne({ email });  
+        if (userExists) {  
+            return res.status(409).json({ error: "User with this email already exists" });  
+        }  
+        const hashedPassword = await bcrypt.hash(password, 10);  
 
-    if ([email, fullName, password].some(
-        (field) => ( field?.trim() === "" )
-    )) {
-        throw new ApiError(400, "All fields are required")
-    }
+        const user = await User.create({  
+            fullName,  
+            thumbnail: {  
+                public_id: thumbnail?.public_id, 
+                url: thumbnail?.secure_url  
+            },  
+            email,  
+            password: hashedPassword 
+        });  
 
-    const userExists = await User.findOne({
-        $or: [{ email }]
-    })
-
-    if (userExists) throw new ApiError(409, "user with username or email already exists")
-
-    // console.log("req.files", req.files);
-    const thumbnailLocalpath = req.files?.thumbnail[0]?.path
-    // console.log("thumbnailLocalpath", thumbnailLocalpath);
-
-    if (!thumbnailLocalpath) throw new ApiError(400, "thumbnail file is required")
-
-    const thumbnail= await uploadOnCloudinary(thumbnailLocalpath).catch((error) => console.log(error))
-
-    if (!thumbnail) throw new ApiError(400, "thumbnail file is required!!!.")
-
-    const user = await User.create({
-        fullName,
-        thumbnail: {
-            public_id: thumbnail.public_id,
-            url: thumbnail.secure_url
-        },
-        email,
-        password
-    })
-
-    const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
-
-    if (!createdUser) throw new ApiError(500, "user registration failed, please try again")
-
-    return res.status(201).json(
-        new ApiResponse(200, createdUser, "user registered successfully")
-    )
-    
-}
+        const createdUser = await User.findById(user._id).select("-password -refreshToken");  
+        if (!createdUser) {  
+            return res.status(500).json({ error: "User registration failed, please try again" });  
+        }  
+        return res.status(201).json(new ApiResponse(200, createdUser, "User registered successfully"));    
+    } catch (error) {  
+        console.error("Registration error:", error);  
+        return res.status(500).json({ error: "An unexpected error occurred" });  
+    }  
+};
 const login=async (req,res)=>{
     const{email,password}=req.body;
     if(!email||!password){
@@ -131,4 +120,4 @@ const logoutUser = async(req, res) => {
         );
 };
 
-module.exports=router;
+module.exports={logoutUser,signupUser,login};
