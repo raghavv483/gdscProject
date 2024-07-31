@@ -1,9 +1,15 @@
 const mongoose=require("mongoose");
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+
+const jwt=require("jsonwebtoken");
+
+const bcrypt=require("bcrypt");
 mongoose.connect("mongodb://127.0.0.1:27017/miniproject");
 
 const userSchema=mongoose.Schema({
+    userProject:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Project",
+    },
     email: {
         type: String,
         required: [true, 'email is required'],
@@ -64,4 +70,4 @@ userSchema.methods = {
 },
 }
 
-export const User = model('User', userSchema)
+module.exports = mongoose.model('User', userSchema);  
